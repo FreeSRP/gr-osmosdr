@@ -62,54 +62,54 @@ class freesrp_sink_c :
     public freesrp_common
 {
 private:
-  // The friend declaration allows freesrp_make_sink_c to
-  // access the private constructor.
-  friend freesrp_sink_c_sptr make_freesrp_sink_c (const std::string & args);
+    // The friend declaration allows freesrp_make_sink_c to
+    // access the private constructor.
+    friend freesrp_sink_c_sptr make_freesrp_sink_c (const std::string & args);
 
-  freesrp_sink_c (const std::string & args);  	// private constructor
+    freesrp_sink_c (const std::string & args);  	// private constructor
 
 public:
-  bool start();
-  bool stop();
 
-  int work( int noutput_items,
-            gr_vector_const_void_star &input_items,
-            gr_vector_void_star &output_items );
+    // From freesrp_common:
+    static std::vector<std::string> get_devices() { return freesrp_common::get_devices(); };
+    size_t get_num_channels( void ) { return freesrp_common::get_num_channels(); }
+    osmosdr::meta_range_t get_sample_rates( void ) { return freesrp_common::get_sample_rates(); }
+    osmosdr::freq_range_t get_freq_range( size_t chan = 0 ) { return freesrp_common::get_freq_range(chan); }
+    osmosdr::freq_range_t get_bandwidth_range( size_t chan = 0 ) { return freesrp_common::get_bandwidth_range(chan); }
+    double set_freq_corr( double ppm, size_t chan = 0 ) { return freesrp_common::set_freq_corr(ppm, chan); }
+    double get_freq_corr( size_t chan = 0 ) { return freesrp_common::get_freq_corr(chan); }
 
-  size_t get_num_channels( void );
+    bool start();
+    bool stop();
 
-  osmosdr::meta_range_t get_sample_rates( void );
-  double set_sample_rate( double rate );
-  double get_sample_rate( void );
+    int work( int noutput_items,
+              gr_vector_const_void_star &input_items,
+              gr_vector_void_star &output_items );
 
-  osmosdr::freq_range_t get_freq_range( size_t chan = 0 );
-  double set_center_freq( double freq, size_t chan = 0 );
-  double get_center_freq( size_t chan = 0 );
-  double set_freq_corr( double ppm, size_t chan = 0 );
-  double get_freq_corr( size_t chan = 0 );
+    double set_sample_rate( double rate );
+    double get_sample_rate( void );
 
-  std::vector<std::string> get_gain_names( size_t chan = 0 );
-  osmosdr::gain_range_t get_gain_range( size_t chan = 0 );
-  osmosdr::gain_range_t get_gain_range( const std::string & name, size_t chan = 0 );
-  bool set_gain_mode( bool automatic, size_t chan = 0 );
-  bool get_gain_mode( size_t chan = 0 );
-  double set_gain( double gain, size_t chan = 0 );
-  double set_gain( double gain, const std::string & name, size_t chan = 0 );
-  double get_gain( size_t chan = 0 );
-  double get_gain( const std::string & name, size_t chan = 0 );
+    double set_center_freq( double freq, size_t chan = 0 );
+    double get_center_freq( size_t chan = 0 );
 
-  double set_bb_gain( double gain, size_t chan = 0 );
+    std::vector<std::string> get_gain_names( size_t chan = 0 );
+    osmosdr::gain_range_t get_gain_range( size_t chan = 0 );
+    osmosdr::gain_range_t get_gain_range( const std::string & name, size_t chan = 0 );
+    //TODO: implement this: bool set_gain_mode( bool automatic, size_t chan = 0 );
+    //TODO: implement this: bool get_gain_mode( size_t chan = 0 );
+    double set_gain( double gain, size_t chan = 0 );
+    double set_gain( double gain, const std::string & name, size_t chan = 0 );
+    double get_gain( size_t chan = 0 );
+    double get_gain( const std::string & name, size_t chan = 0 );
 
-  std::vector< std::string > get_antennas( size_t chan = 0 );
-  std::string set_antenna( const std::string & antenna, size_t chan = 0 );
-  std::string get_antenna( size_t chan = 0 );
+    double set_bb_gain( double gain, size_t chan = 0 );
 
-  void set_dc_offset( const std::complex<double> &offset, size_t chan );
-  void set_iq_balance( const std::complex<double> &balance, size_t chan );
+    std::vector< std::string > get_antennas( size_t chan = 0 );
+    std::string set_antenna( const std::string & antenna, size_t chan = 0 );
+    std::string get_antenna( size_t chan = 0 );
 
-  double set_bandwidth( double bandwidth, size_t chan = 0 );
-  double get_bandwidth( size_t chan = 0 );
-  osmosdr::freq_range_t get_bandwidth_range( size_t chan = 0 );
+    double set_bandwidth( double bandwidth, size_t chan = 0 );
+    double get_bandwidth( size_t chan = 0 );
 };
 
 #endif /* INCLUDED_FREESRP_SINK_C_H */
