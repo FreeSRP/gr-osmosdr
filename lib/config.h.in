@@ -17,5 +17,6 @@
 #cmakedefine ENABLE_RFSPACE
 #cmakedefine ENABLE_AIRSPY
 #cmakedefine ENABLE_SOAPY
+#cmakedefine ENABLE_FREESRP
 
 #endif // CONFIG_H_IN

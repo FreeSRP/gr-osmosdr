@@ -78,6 +78,10 @@
 #include <airspy_source_c.h>
 #endif
 
+#ifdef ENABLE_FREESRP
+#include <freesrp_source_c.h>
+#endif
+
 #include "arg_helpers.h"
 
 using namespace osmosdr;
@@ -172,6 +176,10 @@ devices_t device::find(const device_t &hint)
 #endif
 #ifdef ENABLE_AIRSPY
   BOOST_FOREACH( std::string dev, airspy_source_c::get_devices() )
+    devices.push_back( device_t(dev) );
+#endif
+#ifdef ENABLE_FREESRP
+  BOOST_FOREACH( std::string dev, freesrp_source_c::get_devices() )
     devices.push_back( device_t(dev) );
 #endif
   /* software-only sources should be appended at the very end,

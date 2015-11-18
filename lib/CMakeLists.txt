@@ -233,6 +233,14 @@ GR_INCLUDE_SUBDIRECTORY(soapy)
 endif(ENABLE_SOAPY)
 
 ########################################################################
+# Setup FreeSRP component
+########################################################################
+GR_REGISTER_COMPONENT("FreeSRP support" ENABLE_FREESRP LIBFREESRP_FOUND)
+if(ENABLE_FREESRP)
+GR_INCLUDE_SUBDIRECTORY(freesrp)
+endif(ENABLE_FREESRP)
+
+########################################################################
 # Setup configuration file
 ########################################################################
 ADD_DEFINITIONS(-DHAVE_CONFIG_H=1)
