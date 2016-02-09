@@ -8,7 +8,24 @@ freesrp_sink_c_sptr make_freesrp_sink_c (const std::string &args)
     return gnuradio::get_initial_sptr(new freesrp_sink_c (args));
 }
 
-freesrp_sink_c::freesrp_sink_c (const std::string & args) : freesrp_common(args)
+/*
+ * Specify constraints on number of input and output streams.
+ * This info is used to construct the input and output signatures
+ * (2nd & 3rd args to gr_block's constructor).  The input and
+ * output signatures are used by the runtime system to
+ * check that a valid number and type of inputs and outputs
+ * are connected to this block.  In this case, we accept
+ * only 0 input and 1 output.
+ */
+static const int MIN_IN = 1;   // mininum number of input streams
+static const int MAX_IN = 1;   // maximum number of input streams
+static const int MIN_OUT = 0;  // minimum number of output streams
+static const int MAX_OUT = 0;  // maximum number of output streams
+
+freesrp_sink_c::freesrp_sink_c (const std::string & args) : freesrp_common(args),
+                                                            gr::sync_block("bladerf_sink_c",
+                                                            gr::io_signature::make (MIN_IN, MAX_IN, sizeof (gr_complex)),
+                                                            gr::io_signature::make (MIN_OUT, MAX_OUT, sizeof (gr_complex)))
 {
     if(_srp == nullptr)
     {
