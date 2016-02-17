@@ -35,19 +35,33 @@ freesrp_sink_c::freesrp_sink_c (const std::string & args) : freesrp_common(args)
 
 bool freesrp_sink_c::start()
 {
-    // TODO: sink start
-    return false;
+    _srp->start_tx();
+    return true;
 }
 
 bool freesrp_sink_c::stop()
 {
-    // TODO: sink stop
-    return false;
+    _srp->stop_tx();
+    return true;
 }
 
 int freesrp_sink_c::work(int noutput_items, gr_vector_const_void_star& input_items, gr_vector_void_star& output_items)
 {
-    // TODO: sink work
+    const gr_complex *in = (const gr_complex *) input_items[0];
+
+    int consumed = 0;
+
+    for(int i = 0; i < noutput_items; i++)
+    {
+        FreeSRP::sample s;
+        s.i = real(in[i]);
+        s.q = imag(in[i]);
+        while(!_srp->submit_tx_sample(s)) { /* Wait until the sample can be submitted */ }
+        consumed++;
+    }
+
+    consume_each(consumed);
+
     return 0;
 }
 
