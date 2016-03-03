@@ -22,10 +22,10 @@ static const int MAX_IN = 0;	// maximum number of input streams
 static const int MIN_OUT = 1;	// minimum number of output streams
 static const int MAX_OUT = 1;	// maximum number of output streams
 
-freesrp_source_c::freesrp_source_c (const std::string & args) : freesrp_common(args),
-                                    gr::sync_block ("freesrp_source_c",
-                                    gr::io_signature::make (MIN_IN, MAX_IN, sizeof (gr_complex)),
-                                    gr::io_signature::make (MIN_OUT, MAX_OUT, sizeof (gr_complex)))
+freesrp_source_c::freesrp_source_c (const std::string & args) : gr::sync_block ("freesrp_source_c",
+                                                                gr::io_signature::make (MIN_IN, MAX_IN, sizeof (gr_complex)),
+                                                                gr::io_signature::make (MIN_OUT, MAX_OUT, sizeof (gr_complex))),
+                                                                freesrp_common(args)
 {
     if(_srp == nullptr)
     {

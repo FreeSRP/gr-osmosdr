@@ -22,10 +22,10 @@ static const int MAX_IN = 1;   // maximum number of input streams
 static const int MIN_OUT = 0;  // minimum number of output streams
 static const int MAX_OUT = 0;  // maximum number of output streams
 
-freesrp_sink_c::freesrp_sink_c (const std::string & args) : freesrp_common(args),
-                                                            gr::sync_block("bladerf_sink_c",
+freesrp_sink_c::freesrp_sink_c (const std::string & args) : gr::sync_block("freesrp_sink_c",
                                                             gr::io_signature::make (MIN_IN, MAX_IN, sizeof (gr_complex)),
-                                                            gr::io_signature::make (MIN_OUT, MAX_OUT, sizeof (gr_complex)))
+                                                            gr::io_signature::make (MIN_OUT, MAX_OUT, sizeof (gr_complex))),
+                                                            freesrp_common(args)
 {
     if(_srp == nullptr)
     {
