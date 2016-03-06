@@ -80,7 +80,7 @@ double freesrp_source_c::set_sample_rate( double rate )
     }
     else
     {
-        return r.param;
+        return static_cast<double>(r.param);
     }
 
 }
@@ -95,7 +95,7 @@ double freesrp_source_c::get_sample_rate( void )
     }
     else
     {
-        return r.param;
+        return static_cast<double>(r.param);
     }
 }
 
@@ -113,7 +113,7 @@ double freesrp_source_c::set_center_freq( double freq, size_t chan )
     }
     else
     {
-        return r.param * 1.0e6;
+        return static_cast<double>(r.param);
     }
 }
 
@@ -127,7 +127,7 @@ double freesrp_source_c::get_center_freq( size_t chan )
     }
     else
     {
-        return r.param * 1.0e6;
+        return static_cast<double>(r.param);
     }
 }
 
@@ -189,7 +189,7 @@ double freesrp_source_c::get_gain(size_t chan)
     }
     else
     {
-        return r.param / 1000;
+        return (static_cast<double>(r.param) / 1000.0);
     }
 }
 
@@ -236,7 +236,7 @@ double freesrp_source_c::set_bandwidth(double bandwidth, size_t chan)
     }
     else
     {
-        return r.param;
+        return static_cast<double>(r.param);
     }
 }
 
@@ -250,6 +250,6 @@ double freesrp_source_c::get_bandwidth(size_t chan)
     }
     else
     {
-        return r.param;
+        return static_cast<double>(r.param);
     }
 }
