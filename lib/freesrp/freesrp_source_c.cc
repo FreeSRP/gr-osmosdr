@@ -68,10 +68,11 @@ int freesrp_source_c::work(int noutput_items, gr_vector_const_void_star& input_i
 
 double freesrp_source_c::set_sample_rate( double rate )
 {
-    std::cerr << "This is under development. Did not set the sample rate. " << endl;
-    return 0;
-    /*
-    response r = _srp->send_cmd({SET_RX_SAMP_FREQ, rate});
+    //std::cerr << "This is under development. Did not set the sample rate. " << endl;
+    //return 0;
+
+    command cmd = _srp->make_command(SET_RX_SAMP_FREQ, rate);
+    response r = _srp->send_cmd(cmd);
     if(r.error != CMD_OK)
     {
         std::cerr << "Could not set RX sample rate, error: " << r.error << endl;
@@ -81,7 +82,7 @@ double freesrp_source_c::set_sample_rate( double rate )
     {
         return r.param;
     }
-    */
+
 }
 
 double freesrp_source_c::get_sample_rate( void )
@@ -100,11 +101,11 @@ double freesrp_source_c::get_sample_rate( void )
 
 double freesrp_source_c::set_center_freq( double freq, size_t chan )
 {
-    std::cerr << "This is under development. Did not set the center frequency. " << endl;
-    return 0;
+    //std::cerr << "This is under development. Did not set the center frequency. " << endl;
+    //return 0;
 
-    /*
-    response r = _srp->send_cmd({SET_RX_SAMP_FREQ, freq / 1.0e6});
+    command cmd = _srp->make_command(SET_RX_LO_FREQ, freq);
+    response r = _srp->send_cmd(cmd);
     if(r.error != CMD_OK)
     {
         std::cerr << "Could not set RX LO frequency, error: " << r.error << endl;
@@ -114,12 +115,11 @@ double freesrp_source_c::set_center_freq( double freq, size_t chan )
     {
         return r.param * 1.0e6;
     }
-    */
 }
 
 double freesrp_source_c::get_center_freq( size_t chan )
 {
-    response r = _srp->send_cmd({GET_RX_SAMP_FREQ, 0});
+    response r = _srp->send_cmd({GET_RX_LO_FREQ, 0});
     if(r.error != CMD_OK)
     {
         std::cerr << "Could not get RX LO frequency, error: " << r.error << endl;
@@ -160,7 +160,8 @@ double freesrp_source_c::set_gain(double gain, size_t chan)
     return 0;
 
     /*
-    response r = _srp->send_cmd({SET_RX_RF_GAIN, gain * 1000});
+    command cmd = _srp->make_command(SET_RX_RF_GAIN, gain * 1000);
+    response r = _srp->send_cmd(cmd);
     if(r.error != CMD_OK)
     {
         std::cerr << "Could not set RX RF gain, error: " << r.error << endl;
@@ -223,11 +224,11 @@ std::string freesrp_source_c::get_antenna(size_t chan)
 
 double freesrp_source_c::set_bandwidth(double bandwidth, size_t chan)
 {
-    std::cerr << "This is under development. Did not set the bandwidth. " << endl;
-    return 0;
+    //std::cerr << "This is under development. Did not set the bandwidth. " << endl;
+    //return 0;
 
-    /*
-    response r = _srp->send_cmd({SET_RX_RF_BANDWIDTH, bandwidth});
+    command cmd = _srp->make_command(SET_RX_RF_BANDWIDTH, bandwidth);
+    response r = _srp->send_cmd(cmd);
     if(r.error != CMD_OK)
     {
         std::cerr << "Could not set RX RF bandwidth, error: " << r.error << endl;
@@ -237,7 +238,6 @@ double freesrp_source_c::set_bandwidth(double bandwidth, size_t chan)
     {
         return r.param;
     }
-    */
 }
 
 double freesrp_source_c::get_bandwidth(size_t chan)

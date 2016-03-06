@@ -95,7 +95,7 @@ double freesrp_sink_c::get_sample_rate( void )
 
 double freesrp_sink_c::set_center_freq( double freq, size_t chan )
 {
-    response r = _srp->send_cmd({SET_TX_SAMP_FREQ, freq / 1.0e6});
+    response r = _srp->send_cmd({SET_TX_SAMP_FREQ, freq});
     if(r.error != CMD_OK)
     {
         std::cerr << "Could not set TX LO frequency, error: " << r.error << endl;
