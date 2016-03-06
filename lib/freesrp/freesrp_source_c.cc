@@ -46,6 +46,7 @@ bool freesrp_source_c::start()
 
 bool freesrp_source_c::stop()
 {
+    FreeSRP::response res = _srp->send_cmd({SET_DATAPATH_EN, 0});
     _srp->stop_rx();
     return true;
 }
@@ -67,6 +68,9 @@ int freesrp_source_c::work(int noutput_items, gr_vector_const_void_star& input_i
 
 double freesrp_source_c::set_sample_rate( double rate )
 {
+    std::cerr << "This is under development. Did not set the sample rate. " << endl;
+    return 0;
+    /*
     response r = _srp->send_cmd({SET_RX_SAMP_FREQ, rate});
     if(r.error != CMD_OK)
     {
@@ -77,6 +81,7 @@ double freesrp_source_c::set_sample_rate( double rate )
     {
         return r.param;
     }
+    */
 }
 
 double freesrp_source_c::get_sample_rate( void )
@@ -95,6 +100,10 @@ double freesrp_source_c::get_sample_rate( void )
 
 double freesrp_source_c::set_center_freq( double freq, size_t chan )
 {
+    std::cerr << "This is under development. Did not set the center frequency. " << endl;
+    return 0;
+
+    /*
     response r = _srp->send_cmd({SET_RX_SAMP_FREQ, freq / 1.0e6});
     if(r.error != CMD_OK)
     {
@@ -105,6 +114,7 @@ double freesrp_source_c::set_center_freq( double freq, size_t chan )
     {
         return r.param * 1.0e6;
     }
+    */
 }
 
 double freesrp_source_c::get_center_freq( size_t chan )
@@ -146,6 +156,10 @@ osmosdr::gain_range_t freesrp_source_c::get_gain_range(const std::string& name, 
 
 double freesrp_source_c::set_gain(double gain, size_t chan)
 {
+    std::cerr << "This is under development. Did not set the gain. " << endl;
+    return 0;
+
+    /*
     response r = _srp->send_cmd({SET_RX_RF_GAIN, gain * 1000});
     if(r.error != CMD_OK)
     {
@@ -156,6 +170,7 @@ double freesrp_source_c::set_gain(double gain, size_t chan)
     {
         return r.param / 1000;
     }
+    */
 }
 
 double freesrp_source_c::set_gain(double gain, const std::string& name, size_t chan)
@@ -208,6 +223,10 @@ std::string freesrp_source_c::get_antenna(size_t chan)
 
 double freesrp_source_c::set_bandwidth(double bandwidth, size_t chan)
 {
+    std::cerr << "This is under development. Did not set the bandwidth. " << endl;
+    return 0;
+
+    /*
     response r = _srp->send_cmd({SET_RX_RF_BANDWIDTH, bandwidth});
     if(r.error != CMD_OK)
     {
@@ -218,6 +237,7 @@ double freesrp_source_c::set_bandwidth(double bandwidth, size_t chan)
     {
         return r.param;
     }
+    */
 }
 
 double freesrp_source_c::get_bandwidth(size_t chan)
