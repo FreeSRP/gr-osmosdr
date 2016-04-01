@@ -35,12 +35,18 @@ freesrp_sink_c::freesrp_sink_c (const std::string & args) : gr::sync_block("free
 
 bool freesrp_sink_c::start()
 {
+    FreeSRP::response res = _srp->send_cmd({SET_DATAPATH_EN, 1});
+    if(res.error != FreeSRP::CMD_OK)
+    {
+        return false;
+    }
     _srp->start_tx();
     return true;
 }
 
 bool freesrp_sink_c::stop()
 {
+    FreeSRP::response res = _srp->send_cmd({SET_DATAPATH_EN, 0});
     _srp->stop_tx();
     return true;
 }
