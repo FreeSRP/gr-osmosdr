@@ -17,10 +17,43 @@ freesrp_common::freesrp_common(const std::string &args)
     {
         try
         {
+            if(dict.count("fx3"))
+            {
+                if(Util::find_fx3())
+                {
+                    // Upload firmware to FX3
+                    Util::find_fx3(true, dict["fx3"]);
+                    cout << "FX3 programmed with FreeSRP firmware" << endl;
+                    // Give FX3 time to re-enumerate
+                    this_thread::sleep_for(chrono::milliseconds(600));
+                }
+                else
+                {
+                    cout << "No FX3 in bootloader mode found" << endl;
+                }
+            }
+
             _srp.reset(new FreeSRP::FreeSRP());
+
+            if(dict.count("fpga"))
+            {
+                fpga_status stat = _srp->load_fpga(dict["fpga"]);
+                switch(stat)
+                {
+                case FPGA_CONFIG_ERROR:
+                    throw runtime_error("Could not load FPGA configuration!");
+                case FPGA_CONFIG_SKIPPED:
+                    cout << "FPGA already configured. Restart the FreeSRP to load a new bitstream." << endl;
+                    break;
+                case FPGA_CONFIG_DONE:
+                    cout << "FPGA configured successfully" << endl;
+                    break;
+                }
+            }
+
             cout << "Connected to FreeSRP" << endl;
         }
-        catch(const ConnectionError& e)
+        catch(const runtime_error& e)
         {
             cerr << "FreeSRP Error: " << e.what() << endl;
             throw runtime_error(e.what());
