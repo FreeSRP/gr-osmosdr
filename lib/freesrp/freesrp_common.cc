@@ -22,8 +22,13 @@ freesrp_common::freesrp_common(const std::string &args)
                 if(Util::find_fx3())
                 {
                     // Upload firmware to FX3
-                    Util::find_fx3(true, dict["fx3"]);
-                    cout << "FX3 programmed with FreeSRP firmware" << endl;
+                    string firmware_path = "~/.freesrp/fx3.img";
+                    if(dict["fx3"].length() > 0)
+                    {
+                        firmware_path = dict["fx3"];
+                    }
+                    Util::find_fx3(true, firmware_path);
+                    cout << "FX3 programmed with '" << firmware_path << "'" << endl;
                     // Give FX3 time to re-enumerate
                     this_thread::sleep_for(chrono::milliseconds(600));
                 }
@@ -37,7 +42,12 @@ freesrp_common::freesrp_common(const std::string &args)
 
             if(dict.count("fpga"))
             {
-                fpga_status stat = _srp->load_fpga(dict["fpga"]);
+                string bitstream_path = "~/.freesrp/fpga.bin";
+                if(dict["fpga"].length() > 0)
+                {
+                    bitstream_path = dict["fpga"];
+                }
+                fpga_status stat = _srp->load_fpga(bitstream_path);
                 switch(stat)
                 {
                 case FPGA_CONFIG_ERROR:
@@ -46,7 +56,7 @@ freesrp_common::freesrp_common(const std::string &args)
                     cout << "FPGA already configured. Restart the FreeSRP to load a new bitstream." << endl;
                     break;
                 case FPGA_CONFIG_DONE:
-                    cout << "FPGA configured successfully" << endl;
+                    cout << "FPGA configured with '" << bitstream_path << "'" << endl;
                     break;
                 }
             }
