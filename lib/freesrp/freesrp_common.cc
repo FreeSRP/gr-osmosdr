@@ -1,5 +1,7 @@
 #include "freesrp_common.h"
 
+#include <cstdlib>
+
 #include <boost/make_shared.hpp>
 
 #include <arg_helpers.h>
@@ -22,7 +24,7 @@ freesrp_common::freesrp_common(const std::string &args)
                 if(Util::find_fx3())
                 {
                     // Upload firmware to FX3
-                    string firmware_path = "~/.freesrp/fx3.img";
+                    string firmware_path = string(getenv("HOME")) + "/.freesrp/fx3.img";
                     if(dict["fx3"].length() > 0)
                     {
                         firmware_path = dict["fx3"];
@@ -40,9 +42,9 @@ freesrp_common::freesrp_common(const std::string &args)
 
             _srp.reset(new FreeSRP::FreeSRP());
 
-            if(dict.count("fpga"))
+            if(dict.count("fpga") || !_srp->fpga_loaded())
             {
-                string bitstream_path = "~/.freesrp/fpga.bin";
+                string bitstream_path = string(getenv("HOME")) + "/.freesrp/fpga.bin";
                 if(dict["fpga"].length() > 0)
                 {
                     bitstream_path = dict["fpga"];
