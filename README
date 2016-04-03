@@ -1,3 +1,6 @@
+NOTE: This is a fork of gr-osmosdr to which I am adding FreeSRP support.
+See http://electronics.kitchen/freesrp for more information on the project.
+
 While primarily being developed for the OsmoSDR hardware, this block
 as well supports:
 
