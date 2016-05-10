@@ -79,7 +79,6 @@ double freesrp_source_c::set_sample_rate( double rate )
     {
         return static_cast<double>(r.param);
     }
-
 }
 
 double freesrp_source_c::get_sample_rate( void )

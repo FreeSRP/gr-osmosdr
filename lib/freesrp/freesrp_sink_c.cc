@@ -15,7 +15,7 @@ freesrp_sink_c_sptr make_freesrp_sink_c (const std::string &args)
  * output signatures are used by the runtime system to
  * check that a valid number and type of inputs and outputs
  * are connected to this block.  In this case, we accept
- * only 0 input and 1 output.
+ * only 1 input and 0 output.
  */
 static const int MIN_IN = 1;   // mininum number of input streams
 static const int MAX_IN = 1;   // maximum number of input streams
@@ -55,29 +55,21 @@ int freesrp_sink_c::work(int noutput_items, gr_vector_const_void_star& input_ite
 {
     const gr_complex *in = (const gr_complex *) input_items[0];
 
-    int consumed = 0;
-
     for(int i = 0; i < noutput_items; i++)
     {
         FreeSRP::sample s;
         s.i = real(in[i]);
         s.q = imag(in[i]);
         while(!_srp->submit_tx_sample(s)) { /* Wait until the sample can be submitted */ }
-        consumed++;
     }
 
-    consume_each(consumed);
-
-    return 0;
+    return noutput_items;
 }
 
 double freesrp_sink_c::set_sample_rate( double rate )
 {
-    std::cerr << "This is under development. Did not set the sample rate. " << endl;
-    return 0;
-
-    /*
-    response r = _srp->send_cmd({SET_TX_SAMP_FREQ, rate});
+    command cmd = _srp->make_command(SET_TX_SAMP_FREQ, rate);
+    response r = _srp->send_cmd(cmd);
     if(r.error != CMD_OK)
     {
         std::cerr << "Could not set TX sample rate, error: " << r.error << endl;
@@ -85,9 +77,8 @@ double freesrp_sink_c::set_sample_rate( double rate )
     }
     else
     {
-        return r.param;
+        return static_cast<double>(r.param);
     }
-    */
 }
 
 double freesrp_sink_c::get_sample_rate( void )
