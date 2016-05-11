@@ -64,6 +64,27 @@ freesrp_common::freesrp_common(const std::string &args)
             }
 
             cout << "Connected to FreeSRP" << endl;
+
+            if(dict.count("loopback"))
+            {
+                response res = _srp->send_cmd({SET_LOOPBACK_EN, 1});
+                if(res.error == CMD_OK)
+                {
+                    cout << "AD9364 in loopback mode" << endl;
+                }
+                else
+                {
+                    throw runtime_error("Could not put AD9364 into loopback mode!");
+                }
+            }
+            else
+            {
+                response res = _srp->send_cmd({SET_LOOPBACK_EN, 0});
+                if(res.error != CMD_OK)
+                {
+                    throw runtime_error("Error disabling AD9364 loopback mode!");
+                }
+            }
         }
         catch(const runtime_error& e)
         {
