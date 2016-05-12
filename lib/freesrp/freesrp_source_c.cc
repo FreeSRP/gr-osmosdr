@@ -160,7 +160,7 @@ bool freesrp_source_c::set_gain_mode( bool automatic, size_t chan )
     }
     else
     {
-        return !(r.param == FreeSRP::RF_GAIN_MGC);
+        return r.param != FreeSRP::RF_GAIN_MGC;
     }
 }
 
@@ -174,7 +174,7 @@ bool freesrp_source_c::get_gain_mode( size_t chan )
     }
     else
     {
-        return !(r.param == FreeSRP::RF_GAIN_MGC);
+        return r.param != FreeSRP::RF_GAIN_MGC;
     }
 }
 
@@ -185,6 +185,8 @@ osmosdr::gain_range_t freesrp_source_c::get_gain_range(const std::string& name, 
 
 double freesrp_source_c::set_gain(double gain, size_t chan)
 {
+    gain = get_gain_range().clip(gain);
+
     command cmd = _srp->make_command(SET_RX_RF_GAIN, gain);
     response r = _srp->send_cmd(cmd);
     if(r.error != CMD_OK)
