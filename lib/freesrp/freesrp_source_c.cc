@@ -60,7 +60,7 @@ int freesrp_source_c::work(int noutput_items, gr_vector_const_void_star& input_i
         FreeSRP::sample s;
         while(!_srp->get_rx_sample(s)) { /* Wait until a sample is available */ }
 
-        out[i] = gr_complex(s.i, s.q);
+        out[i] = gr_complex(((float) s.i) / 2048.0f, ((float) s.q) / 2048.0f);
     }
 
     return noutput_items;
