@@ -40,7 +40,10 @@ bool freesrp_source_c::start()
     {
         return false;
     }
-    _srp->start_rx();
+    _srp->start_rx(std::bind(&freesrp_source_c::freesrp_rx_callback, this, std::placeholders::_1));
+
+    _running = true;
+
     return true;
 }
 
@@ -48,17 +51,51 @@ bool freesrp_source_c::stop()
 {
     FreeSRP::response res = _srp->send_cmd({SET_DATAPATH_EN, 0});
     _srp->stop_rx();
+
+    _running = false;
+
     return true;
+}
+
+void freesrp_source_c::freesrp_rx_callback(const std::vector<FreeSRP::sample> &samples)
+{
+    {
+        std::lock_guard<std::mutex> lk(_buf_mut);
+
+        for(const FreeSRP::sample &s : samples)
+        {
+            if(!_buf_queue.enqueue(s))
+            {
+                cerr << "O" << flush;
+            }
+        }
+
+        _buf_num_samples = _buf_queue.size_approx();
+    }
+
+    _buf_cond.notify_one();
 }
 
 int freesrp_source_c::work(int noutput_items, gr_vector_const_void_star& input_items, gr_vector_void_star& output_items)
 {
     gr_complex *out = static_cast<gr_complex *>(output_items[0]);
 
+    if(!_running)
+    {
+        return WORK_DONE;
+    }
+
+    std::unique_lock<std::mutex> lk(_buf_mut);
+    _buf_cond.wait(lk, [&]{return _buf_num_samples >= noutput_items;}); // Wait until enough samples collected
+
     for(int i = 0; i < noutput_items; ++i)
     {
         FreeSRP::sample s;
-        while(!_srp->get_rx_sample(s)) { /* Wait until a sample is available */ }
+        if(!_buf_queue.try_dequeue(s))
+        {
+            // This should not be happening
+            throw runtime_error("Failed to get sample from buffer. This should never happen.");
+        }
 
         out[i] = gr_complex(((float) s.i) / 2048.0f, ((float) s.q) / 2048.0f);
     }

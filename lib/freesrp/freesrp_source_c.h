@@ -30,7 +30,12 @@
 
 #include "freesrp_common.h"
 
+#include "readerwriterqueue/readerwriterqueue.h"
+
 #include <freesrp.hpp>
+
+#include <mutex>
+#include <condition_variable>
 
 class freesrp_source_c;
 
@@ -110,6 +115,17 @@ public:
 
     double set_bandwidth( double bandwidth, size_t chan = 0 );
     double get_bandwidth( size_t chan = 0 );
+
+private:
+
+    void freesrp_rx_callback(const std::vector<FreeSRP::sample> &samples);
+
+    bool _running = false;
+
+    std::mutex _buf_mut;
+    std::condition_variable _buf_cond;
+    size_t _buf_num_samples;
+    moodycamel::ReaderWriterQueue<FreeSRP::sample> _buf_queue{FREESRP_RX_TX_QUEUE_SIZE};
 };
 
 #endif /* INCLUDED_FREESRP_SOURCE_C_H */
