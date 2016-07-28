@@ -122,9 +122,9 @@ private:
 
     bool _running = false;
 
-    std::mutex _buf_mut;
-    std::condition_variable _buf_cond;
-    size_t _buf_num_samples;
+    std::mutex _buf_mut{};
+    std::condition_variable _buf_cond{};
+    size_t _buf_num_samples = 0;
     moodycamel::ReaderWriterQueue<FreeSRP::sample> _buf_queue{FREESRP_RX_TX_QUEUE_SIZE};
 };
 

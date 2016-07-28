@@ -59,18 +59,18 @@ bool freesrp_source_c::stop()
 
 void freesrp_source_c::freesrp_rx_callback(const std::vector<FreeSRP::sample> &samples)
 {
+    std::unique_lock<std::mutex> lk(_buf_mut);
+
+    for(const FreeSRP::sample &s : samples)
     {
-        std::lock_guard<std::mutex> lk(_buf_mut);
-
-        for(const FreeSRP::sample &s : samples)
+        if(!_buf_queue.enqueue(s))
         {
-            if(!_buf_queue.enqueue(s))
-            {
-                cerr << "O" << flush;
-            }
+            cerr << "O" << flush;
         }
-
-        _buf_num_samples = _buf_queue.size_approx();
+        else
+        {
+            _buf_num_samples++;
+        }
     }
 
     _buf_cond.notify_one();
@@ -86,7 +86,12 @@ int freesrp_source_c::work(int noutput_items, gr_vector_const_void_star& input_i
     }
 
     std::unique_lock<std::mutex> lk(_buf_mut);
-    _buf_cond.wait(lk, [&]{return _buf_num_samples >= noutput_items;}); // Wait until enough samples collected
+
+    // Wait until enough samples collected
+    while(_buf_num_samples < noutput_items)
+    {
+        _buf_cond.wait(lk);
+    }
 
     for(int i = 0; i < noutput_items; ++i)
     {
@@ -94,7 +99,11 @@ int freesrp_source_c::work(int noutput_items, gr_vector_const_void_star& input_i
         if(!_buf_queue.try_dequeue(s))
         {
             // This should not be happening
-            throw runtime_error("Failed to get sample from buffer. This should never happen.");
+            throw runtime_error("Failed to get sample from buffer. This should never happen. Number of available samples reported to be " + to_string(_buf_num_samples) + ", noutput_items=" + to_string(noutput_items) + ", i=" + to_string(i));
+        }
+        else
+        {
+            _buf_num_samples--;
         }
 
         out[i] = gr_complex(((float) s.i) / 2048.0f, ((float) s.q) / 2048.0f);
