@@ -30,6 +30,9 @@
 
 #include "freesrp_common.h"
 
+#include <mutex>
+#include <condition_variable>
+
 #include <freesrp.hpp>
 
 class freesrp_sink_c;
@@ -110,6 +113,17 @@ public:
 
     double set_bandwidth( double bandwidth, size_t chan = 0 );
     double get_bandwidth( size_t chan = 0 );
+
+private:
+
+    void freesrp_tx_callback(std::vector<FreeSRP::sample> &samples);
+
+    bool _running = false;
+
+    std::mutex _buf_mut{};
+    std::condition_variable _buf_cond{};
+    size_t _buf_available_space = FREESRP_RX_TX_QUEUE_SIZE;
+    moodycamel::ReaderWriterQueue<FreeSRP::sample> _buf_queue{FREESRP_RX_TX_QUEUE_SIZE};
 };
 
 #endif /* INCLUDED_FREESRP_SINK_C_H */

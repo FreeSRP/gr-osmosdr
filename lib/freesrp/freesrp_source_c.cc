@@ -63,7 +63,7 @@ void freesrp_source_c::freesrp_rx_callback(const std::vector<FreeSRP::sample> &s
 
     for(const FreeSRP::sample &s : samples)
     {
-        if(!_buf_queue.enqueue(s))
+        if(!_buf_queue.try_enqueue(s))
         {
             cerr << "O" << flush;
         }

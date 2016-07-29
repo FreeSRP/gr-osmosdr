@@ -40,7 +40,7 @@ bool freesrp_sink_c::start()
     {
         return false;
     }
-    _srp->start_tx();
+    _srp->start_tx(std::bind(&freesrp_sink_c::freesrp_tx_callback, this, std::placeholders::_1));
     return true;
 }
 
@@ -51,17 +51,61 @@ bool freesrp_sink_c::stop()
     return true;
 }
 
+void freesrp_sink_c::freesrp_tx_callback(std::vector<FreeSRP::sample>& samples)
+{
+    std::unique_lock<std::mutex> lk(_buf_mut);
+
+    for(FreeSRP::sample &s : samples)
+    {
+        if(!_buf_queue.try_dequeue(s))
+        {
+            s.i = 0;
+            s.q = 0;
+        }
+        else
+        {
+            _buf_available_space++;
+        }
+    }
+
+    _buf_cond.notify_one();
+}
+
 int freesrp_sink_c::work(int noutput_items, gr_vector_const_void_star& input_items, gr_vector_void_star& output_items)
 {
     const gr_complex *in = (const gr_complex *) input_items[0];
 
-    for(int i = 0; i < noutput_items; i++)
+    std::unique_lock<std::mutex> lk(_buf_mut);
+
+    // Wait until enough space is available
+    while(_buf_available_space < noutput_items)
+    {
+        _buf_cond.wait(lk);
+    }
+
+    for(int i = 0; i < noutput_items; ++i)
     {
         FreeSRP::sample s;
         s.i = (int16_t) (real(in[i]) * 2047.0f);
         s.q = (int16_t) (imag(in[i]) * 2047.0f);
-        while(!_srp->submit_tx_sample(s)) { /* Wait until the sample can be submitted */ }
+
+        if(!_buf_queue.try_enqueue(s))
+        {
+            throw runtime_error("Failed to add sample to buffer. This should never happen. Available space reported to be " + to_string(_buf_available_space) + " samples, noutput_items=" + to_string(noutput_items) + ", i=" + to_string(i));
+        }
+        else
+        {
+            _buf_available_space--;
+        }
     }
+
+    /*for(int i = 0; i < noutput_items; i++)
+    {
+        FreeSRP::sample s;
+        s.i = (int16_t) (real(in[i]) * 2047.0f);
+        s.q = (int16_t) (imag(in[i]) * 2047.0f);
+        while(!_srp->submit_tx_sample(s)) { /* Wait until the sample can be submitted *//* }
+    }*/
 
     return noutput_items;
 }
