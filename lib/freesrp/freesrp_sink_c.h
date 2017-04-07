@@ -29,6 +29,7 @@
 #include "sink_iface.h"
 
 #include "freesrp_common.h"
+#include "readerwriterqueue/readerwriterqueue.h"
 
 #include <mutex>
 #include <condition_variable>
