@@ -123,8 +123,15 @@ size_t freesrp_common::get_num_channels( void )
 osmosdr::meta_range_t freesrp_common::get_sample_rates( void )
 {
     osmosdr::meta_range_t sample_rates;
-    sample_rates.push_back(osmosdr::range_t(2.18e5, 61.44e6, 1));
-
+    sample_rates.push_back(osmosdr::range_t(1e6, 61.44e6, 1));
+    sample_rates.push_back(osmosdr::range_t(1e6));
+    sample_rates.push_back(osmosdr::range_t(8e6));
+    sample_rates.push_back(osmosdr::range_t(16e6));
+    sample_rates.push_back(osmosdr::range_t(20e6));
+    sample_rates.push_back(osmosdr::range_t(40e6));
+    sample_rates.push_back(osmosdr::range_t(50e6));
+    sample_rates.push_back(osmosdr::range_t(61.44e6));
+    
     return sample_rates;
 }
 
@@ -143,7 +150,15 @@ osmosdr::freq_range_t freesrp_common::get_bandwidth_range(size_t chan)
     //TODO: Verify bandwidth ranges
 
     osmosdr::meta_range_t sample_rates;
-    sample_rates.push_back(osmosdr::range_t(2.18e5, 56e6, 1));
+    sample_rates.push_back(osmosdr::range_t(2e5, 56e6, 1));
+    sample_rates.push_back(osmosdr::range_t(2e5));
+    sample_rates.push_back(osmosdr::range_t(1e6));
+    sample_rates.push_back(osmosdr::range_t(8e6));
+    sample_rates.push_back(osmosdr::range_t(16e6));
+    sample_rates.push_back(osmosdr::range_t(20e6));
+    sample_rates.push_back(osmosdr::range_t(40e6));
+    sample_rates.push_back(osmosdr::range_t(50e6));
+    sample_rates.push_back(osmosdr::range_t(56e6));
 
     return sample_rates;
 }

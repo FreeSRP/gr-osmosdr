@@ -99,14 +99,6 @@ int freesrp_sink_c::work(int noutput_items, gr_vector_const_void_star& input_ite
         }
     }
 
-    /*for(int i = 0; i < noutput_items; i++)
-    {
-        FreeSRP::sample s;
-        s.i = (int16_t) (real(in[i]) * 2047.0f);
-        s.q = (int16_t) (imag(in[i]) * 2047.0f);
-        while(!_srp->submit_tx_sample(s)) { /* Wait until the sample can be submitted *//* }
-    }*/
-
     return noutput_items;
 }
 
