@@ -21,7 +21,14 @@ freesrp_common::freesrp_common(const std::string &args)
     {
         try
         {
-            if(dict.count("fx3"))
+	    std::string serial = "";
+	    
+	    if(dict.count("freesrp"))
+	    {
+		serial = dict["freesrp"];
+	    }
+
+	    if(dict.count("fx3"))
             {
                 if(Util::find_fx3())
                 {
@@ -42,7 +49,7 @@ freesrp_common::freesrp_common(const std::string &args)
                 }
             }
 
-            _srp.reset(new FreeSRP::FreeSRP());
+            _srp.reset(new FreeSRP::FreeSRP(serial));
 
             if(dict.count("fpga") || !_srp->fpga_loaded())
             {
