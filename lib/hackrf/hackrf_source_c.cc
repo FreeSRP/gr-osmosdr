@@ -49,17 +49,18 @@ using namespace boost::assign;
 
 #define BYTES_PER_SAMPLE  2 /* HackRF device produces 8 bit unsigned IQ data */
 
-#define HACKRF_FORMAT_ERROR(ret) \
-  boost::str( boost::format("(%d) %s") \
-    % ret % hackrf_error_name((enum hackrf_error)ret) ) \
+#define HACKRF_FORMAT_ERROR(ret, msg) \
+  boost::str( boost::format(msg " (%1%) %2%") \
+    % ret % hackrf_error_name((enum hackrf_error)ret) )
 
 #define HACKRF_THROW_ON_ERROR(ret, msg) \
-  if ( ret != HACKRF_SUCCESS )  \
-  throw std::runtime_error( boost::str( boost::format(msg " (%d) %s") \
-      % ret % hackrf_error_name((enum hackrf_error)ret) ) );
+  if ( ret != HACKRF_SUCCESS ) \
+  { \
+    throw std::runtime_error( HACKRF_FORMAT_ERROR(ret, msg) ); \
+  }
 
 #define HACKRF_FUNC_STR(func, arg) \
-  boost::str(boost::format(func "(%d)") % arg) + " has failed"
+  boost::str(boost::format(func "(%1%)") % arg) + " has failed"
 
 int hackrf_source_c::_usage = 0;
 boost::mutex hackrf_source_c::_usage_mutex;
@@ -125,11 +126,11 @@ hackrf_source_c::hackrf_source_c (const std::string &args)
   // create a lookup table for gr_complex values
   for (unsigned int i = 0; i <= 0xffff; i++) {
 #ifdef BOOST_LITTLE_ENDIAN
-    _lut.push_back( gr_complex( (float(char(i & 0xff))) * (1.0f/128.0f),
-                                (float(char(i >> 8))) * (1.0f/128.0f) ) );
+    _lut.push_back( gr_complex( (float(int8_t(i & 0xff))) * (1.0f/128.0f),
+                                (float(int8_t(i >> 8))) * (1.0f/128.0f) ) );
 #else // BOOST_BIG_ENDIAN
-    _lut.push_back( gr_complex( (float(char(i >> 8))) * (1.0f/128.0f),
-                                (float(char(i & 0xff))) * (1.0f/128.0f) ) );
+    _lut.push_back( gr_complex( (float(int8_t(i >> 8))) * (1.0f/128.0f),
+                                (float(int8_t(i & 0xff))) * (1.0f/128.0f) ) );
 #endif
   }
 
@@ -151,14 +152,14 @@ hackrf_source_c::hackrf_source_c (const std::string &args)
     if (hackrf_serial.length() > 1) {
       ret = hackrf_open_by_serial( hackrf_serial.c_str(), &_dev );
     } else {
-        unsigned int dev_index = 0;
+        int dev_index = 0;
         try {
-          dev_index = boost::lexical_cast< unsigned int >( hackrf_serial );
+          dev_index = boost::lexical_cast< int >( hackrf_serial );
         } catch ( std::exception &ex ) {
           throw std::runtime_error(
                 "Failed to use '" + hackrf_serial + "' as HackRF device index number: " + ex.what());
         }
-        
+
         hackrf_device_list_t *list = hackrf_device_list();
         if (dev_index < list->devicecount) {
           ret = hackrf_device_list_open(list, dev_index, &_dev);
@@ -214,7 +215,7 @@ hackrf_source_c::hackrf_source_c (const std::string &args)
     ret = hackrf_set_antenna_enable(_dev, static_cast<uint8_t>(bias));
     if ( ret != HACKRF_SUCCESS )
     {
-      std::cerr << "Failed to apply antenna bias voltage state: " << bias << " " << HACKRF_FORMAT_ERROR(ret) << std::endl;
+      std::cerr << "Failed to apply antenna bias voltage state: " << bias << HACKRF_FORMAT_ERROR(ret, "") << std::endl;
     }
     else
     {
@@ -243,9 +244,15 @@ hackrf_source_c::~hackrf_source_c ()
   if (_dev) {
 //    _thread.join();
     int ret = hackrf_stop_rx( _dev );
-    HACKRF_THROW_ON_ERROR(ret, "Failed to stop RX streaming")
+    if ( ret != HACKRF_SUCCESS )
+    {
+      std::cerr << HACKRF_FORMAT_ERROR(ret, "Failed to stop RX streaming") << std::endl;
+    }
     ret = hackrf_close( _dev );
-    HACKRF_THROW_ON_ERROR(ret, "Failed to close HackRF")
+    if ( ret != HACKRF_SUCCESS )
+    {
+      std::cerr << HACKRF_FORMAT_ERROR(ret, "Failed to close HackRF") << std::endl;
+    }
     _dev = NULL;
 
     {
@@ -260,8 +267,7 @@ hackrf_source_c::~hackrf_source_c ()
 
   if (_buf) {
     for(unsigned int i = 0; i < _buf_num; ++i) {
-      if (_buf[i])
-        free(_buf[i]);
+      free(_buf[i]);
     }
 
     free(_buf);
@@ -404,7 +410,7 @@ std::vector<std::string> hackrf_source_c::get_devices()
 #ifdef LIBHACKRF_HAVE_DEVICE_LIST
   hackrf_device_list_t *list = hackrf_device_list();
   
-  for (unsigned int i = 0; i < list->devicecount; i++) {
+  for (int i = 0; i < list->devicecount; i++) {
     label = "HackRF ";
     label += hackrf_usb_board_id_name( list->usb_board_ids[i] );
     

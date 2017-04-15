@@ -56,24 +56,25 @@ using namespace boost::assign;
 
 #define BYTES_PER_SAMPLE  2 /* HackRF device consumes 8 bit unsigned IQ data */
 
-#define HACKRF_FORMAT_ERROR(ret) \
-  boost::str( boost::format("(%d) %s") \
-    % ret % hackrf_error_name((enum hackrf_error)ret) ) \
+#define HACKRF_FORMAT_ERROR(ret, msg) \
+  boost::str( boost::format(msg " (%1%) %2%") \
+    % ret % hackrf_error_name((enum hackrf_error)ret) )
 
 #define HACKRF_THROW_ON_ERROR(ret, msg) \
-  if ( ret != HACKRF_SUCCESS )  \
-  throw std::runtime_error( boost::str( boost::format(msg " (%d) %s") \
-      % ret % hackrf_error_name((enum hackrf_error)ret) ) );
+  if ( ret != HACKRF_SUCCESS ) \
+  { \
+    throw std::runtime_error( HACKRF_FORMAT_ERROR(ret, msg) ); \
+  }
 
 #define HACKRF_FUNC_STR(func, arg) \
-  boost::str(boost::format(func "(%d)") % arg) + " has failed"
+  boost::str(boost::format(func "(%1%)") % arg) + " has failed"
 
 static inline bool cb_init(circular_buffer_t *cb, size_t capacity, size_t sz)
 {
   cb->buffer = malloc(capacity * sz);
   if(cb->buffer == NULL)
     return false; // handle error
-  cb->buffer_end = (char *)cb->buffer + capacity * sz;
+  cb->buffer_end = (int8_t *)cb->buffer + capacity * sz;
   cb->capacity = capacity;
   cb->count = 0;
   cb->sz = sz;
@@ -84,10 +85,8 @@ static inline bool cb_init(circular_buffer_t *cb, size_t capacity, size_t sz)
 
 static inline void cb_free(circular_buffer_t *cb)
 {
-  if (cb->buffer) {
-    free(cb->buffer);
-    cb->buffer = NULL;
-  }
+  free(cb->buffer);
+  cb->buffer = NULL;
   // clear out other fields too, just to be safe
   cb->buffer_end = 0;
   cb->capacity = 0;
@@ -109,7 +108,7 @@ static inline bool cb_push_back(circular_buffer_t *cb, const void *item)
   if(cb->count == cb->capacity)
     return false; // handle error
   memcpy(cb->head, item, cb->sz);
-  cb->head = (char *)cb->head + cb->sz;
+  cb->head = (int8_t *)cb->head + cb->sz;
   if(cb->head == cb->buffer_end)
     cb->head = cb->buffer;
   cb->count++;
@@ -121,7 +120,7 @@ static inline bool cb_pop_front(circular_buffer_t *cb, void *item)
   if(cb->count == 0)
     return false; // handle error
   memcpy(item, cb->tail, cb->sz);
-  cb->tail = (char *)cb->tail + cb->sz;
+  cb->tail = (int8_t *)cb->tail + cb->sz;
   if(cb->tail == cb->buffer_end)
     cb->tail = cb->buffer;
   cb->count--;
@@ -237,7 +236,7 @@ hackrf_sink_c::hackrf_sink_c (const std::string &args)
     ret = hackrf_set_antenna_enable(_dev, static_cast<uint8_t>(bias));
     if ( ret != HACKRF_SUCCESS )
     {
-      std::cerr << "Failed to apply antenna bias voltage state: " << bias << " " << HACKRF_FORMAT_ERROR(ret) << std::endl;
+      std::cerr << "Failed to apply antenna bias voltage state: " << bias << HACKRF_FORMAT_ERROR(ret, "") << std::endl;
     }
     else
     {
@@ -245,7 +244,7 @@ hackrf_sink_c::hackrf_sink_c (const std::string &args)
     }
   }
 
-  _buf = (char *) malloc( BUF_LEN );
+  _buf = (int8_t *) malloc( BUF_LEN );
 
   cb_init( &_cbuf, _buf_num, BUF_LEN );
 
@@ -263,9 +262,15 @@ hackrf_sink_c::~hackrf_sink_c ()
   if (_dev) {
 //    _thread.join();
     int ret = hackrf_stop_tx( _dev );
-    HACKRF_THROW_ON_ERROR(ret, "Failed to stop TX streaming")
+    if ( ret != HACKRF_SUCCESS )
+    {
+      std::cerr << HACKRF_FORMAT_ERROR(ret, "Failed to stop TX streaming") << std::endl;
+    }
     ret = hackrf_close( _dev );
-    HACKRF_THROW_ON_ERROR(ret, "Failed to close HackRF")
+    if ( ret != HACKRF_SUCCESS )
+    {
+      std::cerr << HACKRF_FORMAT_ERROR(ret, "Failed to close HackRF") << std::endl;
+    }
     _dev = NULL;
 
     {
@@ -278,10 +283,8 @@ hackrf_sink_c::~hackrf_sink_c ()
     }
   }
 
-  if (_buf) {
-    free(_buf);
-    _buf = NULL;
-  }
+  free(_buf);
+  _buf = NULL;
 
   cb_free( &_cbuf );
 }
@@ -353,7 +356,7 @@ bool hackrf_sink_c::stop()
 }
 
 #ifdef USE_AVX
-void convert_avx(const float* inbuf, char* outbuf,const unsigned int count)
+void convert_avx(const float* inbuf, int8_t* outbuf,const unsigned int count)
 {
   __m256 mulme = _mm256_set_ps(127.0f, 127.0f, 127.0f, 127.0f, 127.0f, 127.0f, 127.0f, 127.0f);
   for(unsigned int i=0; i<count;i++){
@@ -376,7 +379,7 @@ void convert_avx(const float* inbuf, char* outbuf,const unsigned int count)
 }
 
 #elif USE_SSE2
-void convert_sse2(const float* inbuf, char* outbuf,const unsigned int count)
+void convert_sse2(const float* inbuf, int8_t* outbuf,const unsigned int count)
 {
   const register __m128 mulme = _mm_set_ps( 127.0f, 127.0f, 127.0f, 127.0f );
   __m128 itmp1,itmp2,itmp3,itmp4;
@@ -407,7 +410,7 @@ void convert_sse2(const float* inbuf, char* outbuf,const unsigned int count)
 }
 #endif
 
-void convert_default(float* inbuf, char* outbuf,const unsigned int count)
+void convert_default(float* inbuf, int8_t* outbuf,const unsigned int count)
 {
   for(unsigned int i=0; i<count;i++){
     outbuf[i]= inbuf[i]*127;
@@ -427,7 +430,7 @@ int hackrf_sink_c::work( int noutput_items,
       _buf_cond.wait( lock );
   }
 
-  char *buf = _buf + _buf_used;
+  int8_t *buf = _buf + _buf_used;
   unsigned int prev_buf_used = _buf_used;
 
   unsigned int remaining = (BUF_LEN-_buf_used)/2; //complex
@@ -489,7 +492,7 @@ std::vector<std::string> hackrf_sink_c::get_devices()
 #ifdef LIBHACKRF_HAVE_DEVICE_LIST
   hackrf_device_list_t *list = hackrf_device_list();
   
-  for (unsigned int i = 0; i < list->devicecount; i++) {
+  for (int i = 0; i < list->devicecount; i++) {
     label = "HackRF ";
     label += hackrf_usb_board_id_name( list->usb_board_ids[i] );
     

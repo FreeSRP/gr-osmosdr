@@ -145,7 +145,7 @@ endif(ENABLE_FCD OR ENABLE_FCDPP)
 ########################################################################
 # Setup File component
 ########################################################################
-GR_REGISTER_COMPONENT("IQ File Source" ENABLE_FILE GNURADIO_BLOCKS_FOUND)
+GR_REGISTER_COMPONENT("IQ File Source & Sink" ENABLE_FILE GNURADIO_BLOCKS_FOUND)
 if(ENABLE_FILE)
 GR_INCLUDE_SUBDIRECTORY(file)
 endif(ENABLE_FILE)
@@ -195,7 +195,7 @@ endif(ENABLE_NONFREE)
 ########################################################################
 # Setup HackRF component
 ########################################################################
-GR_REGISTER_COMPONENT("HackRF Jawbreaker" ENABLE_HACKRF LIBHACKRF_FOUND)
+GR_REGISTER_COMPONENT("HackRF & rad1o Badge" ENABLE_HACKRF LIBHACKRF_FOUND)
 if(ENABLE_HACKRF)
 GR_INCLUDE_SUBDIRECTORY(hackrf)
 endif(ENABLE_HACKRF)
@@ -231,6 +231,14 @@ GR_REGISTER_COMPONENT("SoapySDR support" ENABLE_SOAPY SoapySDR_FOUND)
 if(ENABLE_SOAPY)
 GR_INCLUDE_SUBDIRECTORY(soapy)
 endif(ENABLE_SOAPY)
+
+########################################################################
+# Setup Red Pitaya component
+########################################################################
+GR_REGISTER_COMPONENT("Red Pitaya SDR" ENABLE_REDPITAYA)
+if(ENABLE_REDPITAYA)
+GR_INCLUDE_SUBDIRECTORY(redpitaya)
+endif(ENABLE_REDPITAYA)
 
 ########################################################################
 # Setup FreeSRP component

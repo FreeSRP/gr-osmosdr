@@ -65,6 +65,8 @@ class app_top_block(stdgui2.std_top_block, pubsub):
                           help="Device args, [default=%default]")
         parser.add_option("-A", "--antenna", type="string", default=None,
                           help="Select RX antenna where appropriate")
+        parser.add_option("", "--clock-source",
+                          help="Set the clock source; typically 'internal', 'external', 'external_1pps', 'mimo' or 'gpsdo'")
         parser.add_option("-s", "--samp-rate", type="eng_float", default=None,
                           help="Set sample rate (bandwidth), minimum by default")
         parser.add_option("-f", "--center-freq", type="eng_float", default=None,
@@ -91,6 +93,8 @@ class app_top_block(stdgui2.std_top_block, pubsub):
                           help="Set fftsink averaging factor, default=[%default]")
         parser.add_option("", "--averaging", action="store_true", default=False,
                           help="Enable fftsink averaging, default=[%default]")
+        parser.add_option("", "--peak-hold", action="store_true", default=False,
+                          help="Enable fftsink peak hold, default=[%default]")
         parser.add_option("", "--ref-scale", type="eng_float", default=1.0,
                           help="Set dBFS=0dB input value, default=[%default]")
         parser.add_option("", "--fft-size", type="int", default=1024,
@@ -119,6 +123,10 @@ class app_top_block(stdgui2.std_top_block, pubsub):
         # Set the antenna
         if(options.antenna):
             self.src.set_antenna(options.antenna)
+
+        # Set the clock source:
+        if options.clock_source is not None:
+            self.src.set_clock_source(options.clock_source)
 
         if options.samp_rate is None:
             options.samp_rate = self.src.get_sample_rates().start()
@@ -242,6 +250,7 @@ class app_top_block(stdgui2.std_top_block, pubsub):
                                               ref_level=20.0,
                                               y_divs = 12,
                                               average=options.averaging,
+                                              peak_hold=options.peak_hold,
                                               avg_alpha=options.avg_alpha,
                                               fft_rate=options.fft_rate)
 

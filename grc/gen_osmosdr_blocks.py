@@ -150,6 +150,7 @@ self.\$(id).set_bandwidth(\$bw$(n), $n)
     <option><name>Default</name><key></key></option>
     <option><name>Internal</name><key>internal</key></option>
     <option><name>External</name><key>external</key></option>
+    <option><name>External 1PPS</name><key>external_1pps</key></option>
     <option><name>MIMO Cable</name><key>mimo</key></option>
     <option><name>O/B GPSDO</name><key>gpsdo</key></option>
   </param>
@@ -219,10 +220,16 @@ While primarily being developed for the OsmoSDR hardware, this block as well sup
  * RFSPACE SDR-IQ, SDR-IP, NetSDR (incl. X2 option)
  * AirSpy Wideband Receiver through libairspy
 #end if
+#if $sourk == 'sink':
+ * gnuradio .cfile output through libgnuradio-blocks
+#end if
+ * CCCamp 2015 rad1o Badge through libhackrf
  * Great Scott Gadgets HackRF through libhackrf
  * Nuand LLC bladeRF through libbladeRF library
  * Ettus USRP Devices through Ettus UHD library
  * Fairwaves UmTRX through Fairwaves' fork of UHD
+ * Red Pitaya SDR transceiver (http://bazaar.redpitaya.com)
+ * FreeSRP through libfreesrp library
 
 By using the osmocom $sourk block you can take advantage of a common software api in your application(s) independent of the underlying radio hardware.
 
@@ -250,11 +257,17 @@ Lines ending with ... mean it's possible to bind devices together by specifying 
   file='/path/to/your file',rate=1e6[,freq=100e6][,repeat=true][,throttle=true] ...
   netsdr=127.0.0.1[:50000][,nchan=2]
   sdr-ip=127.0.0.1[:50000]
+  cloudiq=127.0.0.1[:50000]
   sdr-iq=/dev/ttyUSB0
-  airspy=0[,bias=0|1]
+  airspy=0[,bias=0|1][,linearity][,sensitivity]
 #end if
+#if $sourk == 'sink':
+  file='/path/to/your file',rate=1e6[,freq=100e6][,append=true][,throttle=true] ...
+#end if
+  redpitaya=192.168.1.100[:1001]
+  freesrp=0[,fx3='path/to/fx3.img',fpga='path/to/fpga.bin',loopback]
   hackrf=0[,buffers=32][,bias=0|1][,bias_tx=0|1]
-  bladerf=0[,fpga='/path/to/the/bitstream.rbf']
+  bladerf=0[,tamer=internal|external|external_1pps][,smb=25e6]
   uhd[,serial=...][,lo_offset=0][,mcr=52e6][,nchan=2][,subdev='\\\\'B:0 A:0\\\\''] ...
 
 Num Channels:
@@ -297,11 +310,11 @@ Overall RF gain of the device.
 
 IF Gain:
 Overall intermediate frequency gain of the device.
-This setting is available for RTL-SDR and OsmoSDR devices with E4000 tuners and HackRF Jawbreaker in receive and transmit mode. Observations lead to a reasonable gain range from 15 to 30dB.
+This setting is available for RTL-SDR and OsmoSDR devices with E4000 tuners and HackRF in receive and transmit mode. Observations lead to a reasonable gain range from 15 to 30dB.
 
 BB Gain:
 Overall baseband gain of the device.
-This setting is available for HackRF Jawbreaker in receive mode. Observations lead to a reasonable gain range from 15 to 30dB.
+This setting is available for HackRF in receive mode. Observations lead to a reasonable gain range from 15 to 30dB.
 
 Antenna:
 For devices with only one antenna, this may be left blank.

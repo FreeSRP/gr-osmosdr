@@ -78,6 +78,14 @@
 #include <airspy_source_c.h>
 #endif
 
+#ifdef ENABLE_SOAPY
+#include <soapy_source_c.h>
+#endif
+
+#ifdef ENABLE_REDPITAYA
+#include <redpitaya_source_c.h>
+#endif
+
 #ifdef ENABLE_FREESRP
 #include <freesrp_source_c.h>
 #endif
@@ -182,12 +190,21 @@ devices_t device::find(const device_t &hint)
   BOOST_FOREACH( std::string dev, freesrp_source_c::get_devices() )
     devices.push_back( device_t(dev) );
 #endif
+#ifdef ENABLE_SOAPY
+  BOOST_FOREACH( std::string dev, soapy_source_c::get_devices() )
+    devices.push_back( device_t(dev) );
+#endif
+
   /* software-only sources should be appended at the very end,
    * hopefully resulting in hardware sources to be shown first
    * in a graphical interface etc... */
 
 #ifdef ENABLE_RTL_TCP
   BOOST_FOREACH( std::string dev, rtl_tcp_source_c::get_devices( fake ) )
+    devices.push_back( device_t(dev) );
+#endif
+#ifdef ENABLE_REDPITAYA
+  BOOST_FOREACH( std::string dev, redpitaya_source_c::get_devices( fake ) )
     devices.push_back( device_t(dev) );
 #endif
 #ifdef ENABLE_FILE

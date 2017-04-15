@@ -46,7 +46,7 @@ bool freesrp_sink_c::start()
 
 bool freesrp_sink_c::stop()
 {
-    FreeSRP::response res = _srp->send_cmd({SET_DATAPATH_EN, 0});
+    _srp->send_cmd({SET_DATAPATH_EN, 0});
     _srp->stop_tx();
     return true;
 }
@@ -78,7 +78,7 @@ int freesrp_sink_c::work(int noutput_items, gr_vector_const_void_star& input_ite
     std::unique_lock<std::mutex> lk(_buf_mut);
 
     // Wait until enough space is available
-    while(_buf_available_space < noutput_items)
+    while(_buf_available_space < (unsigned int) noutput_items)
     {
         _buf_cond.wait(lk);
     }

@@ -38,6 +38,8 @@
 #include <gnuradio/tags.h>
 #include <gnuradio/sync_block.h>
 
+#include <volk/volk.h>
+
 #include "arg_helpers.h"
 #include "bladerf_sink_c.h"
 
@@ -259,10 +261,7 @@ int bladerf_sink_c::work( int noutput_items,
   }
 
   /* Convert floating point samples into fixed point */
-  for (int i = 0; i < 2 * noutput_items;) {
-    _conv_buf[i++] = (int16_t)(scaling * real(*in));
-    _conv_buf[i++] = (int16_t)(scaling * imag(*in++));
-  }
+  volk_32f_s32f_convert_16i(_conv_buf, (float*)in, scaling, 2 * noutput_items);
 
   if (_use_metadata) {
     ret = transmit_with_tags(noutput_items);
@@ -564,4 +563,19 @@ double bladerf_sink_c::get_bandwidth( size_t chan )
 osmosdr::freq_range_t bladerf_sink_c::get_bandwidth_range( size_t chan )
 {
   return filter_bandwidths();
+}
+
+void bladerf_sink_c::set_clock_source(const std::string &source, const size_t mboard)
+{
+  bladerf_common::set_clock_source(source, mboard);
+}
+
+std::string bladerf_sink_c::get_clock_source(const size_t mboard)
+{
+  return bladerf_common::get_clock_source(mboard);
+}
+
+std::vector<std::string> bladerf_sink_c::get_clock_sources(const size_t mboard)
+{
+  return bladerf_common::get_clock_sources(mboard);
 }

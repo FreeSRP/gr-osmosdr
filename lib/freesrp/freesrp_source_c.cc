@@ -48,11 +48,9 @@ bool freesrp_source_c::start()
 }
 
 bool freesrp_source_c::stop()
-{
-    FreeSRP::response res = _srp->send_cmd({SET_DATAPATH_EN, 0});
+{   
+    _srp->send_cmd({SET_DATAPATH_EN, 0});
     _srp->stop_rx();
-
-    _running = false;
 
     return true;
 }
@@ -65,7 +63,10 @@ void freesrp_source_c::freesrp_rx_callback(const std::vector<FreeSRP::sample> &s
     {
         if(!_buf_queue.try_enqueue(s))
         {
-            cerr << "O" << flush;
+	    if(!_ignore_overflow)
+	    {
+		throw runtime_error("RX buffer overflow");
+	    }
         }
         else
         {
@@ -80,18 +81,18 @@ int freesrp_source_c::work(int noutput_items, gr_vector_const_void_star& input_i
 {
     gr_complex *out = static_cast<gr_complex *>(output_items[0]);
 
-    if(!_running)
-    {
-        return WORK_DONE;
-    }
-
     std::unique_lock<std::mutex> lk(_buf_mut);
 
+    if(!_running)
+    {
+	return WORK_DONE;
+    }
+    
     // Wait until enough samples collected
-    while(_buf_num_samples < noutput_items)
+    while(_buf_num_samples < (unsigned int) noutput_items)
     {
         _buf_cond.wait(lk);
-    }
+    }  
 
     for(int i = 0; i < noutput_items; ++i)
     {

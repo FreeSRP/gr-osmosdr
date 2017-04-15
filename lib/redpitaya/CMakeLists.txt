@@ -1,4 +1,4 @@
-# Copyright 2015 Free Software Foundation, Inc.
+# Copyright 2012 Free Software Foundation, Inc.
 #
 # This file is part of GNU Radio
 #
@@ -23,17 +23,16 @@
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${SoapySDR_INCLUDE_DIRS}
 )
 
-set(soapy_srcs
-    ${CMAKE_CURRENT_SOURCE_DIR}/soapy_common.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/soapy_source_c.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/soapy_sink_c.cc
+set(redpitaya_srcs
+    ${CMAKE_CURRENT_SOURCE_DIR}/redpitaya_source_c.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/redpitaya_sink_c.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/redpitaya_common.cc
 )
 
 ########################################################################
 # Append gnuradio-osmosdr library sources
 ########################################################################
-list(APPEND gr_osmosdr_srcs ${soapy_srcs})
-list(APPEND gr_osmosdr_libs ${SoapySDR_LIBRARIES})
+list(APPEND gr_osmosdr_srcs ${redpitaya_srcs})
+#list(APPEND gr_osmosdr_libs ${GNURADIO_BLOCKS_LIBRARIES})

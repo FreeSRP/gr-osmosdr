@@ -257,8 +257,7 @@ rtl_source_c::~rtl_source_c ()
 
   if (_buf) {
     for(unsigned int i = 0; i < _buf_num; ++i) {
-      if (_buf[i])
-        free(_buf[i]);
+      free(_buf[i]);
     }
 
     free(_buf);
@@ -662,7 +661,7 @@ double rtl_source_c::set_if_gain(double gain, size_t chan)
           sum += gains[ j + 1 ];
       }
 
-      double err = abs(gain - sum);
+      double err = std::abs(gain - sum);
       if (err < error) {
         error = err;
         gains[ i + 1 ] = g;

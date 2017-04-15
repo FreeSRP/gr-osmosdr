@@ -40,18 +40,24 @@
 #include <gnuradio/io_signature.h>
 
 #include "airspy_source_c.h"
+#include "airspy_fir_kernels.h"
 
 #include "arg_helpers.h"
 
 using namespace boost::assign;
 
+#define AIRSPY_FORMAT_ERROR(ret, msg) \
+  boost::str( boost::format(msg " (%1%) %2%") \
+    % ret % airspy_error_name((enum airspy_error)ret) )
+
 #define AIRSPY_THROW_ON_ERROR(ret, msg) \
-  if ( ret != AIRSPY_SUCCESS )  \
-  throw std::runtime_error( boost::str( boost::format(msg " (%d) %s") \
-      % ret % airspy_error_name((enum airspy_error)ret) ) );
+  if ( ret != AIRSPY_SUCCESS ) \
+  { \
+    throw std::runtime_error( AIRSPY_FORMAT_ERROR(ret, msg) ); \
+  }
 
 #define AIRSPY_FUNC_STR(func, arg) \
-  boost::str(boost::format(func "(%d)") % arg) + " has failed"
+  boost::str(boost::format(func "(%1%)") % arg) + " has failed"
 
 airspy_source_c_sptr make_airspy_source_c (const std::string & args)
 {
@@ -84,6 +90,7 @@ airspy_source_c::airspy_source_c (const std::string &args)
     _center_freq(0),
     _freq_corr(0),
     _auto_gain(false),
+    _gain_policy(linearity),
     _lna_gain(0),
     _mix_gain(0),
     _vga_gain(0),
@@ -106,11 +113,10 @@ airspy_source_c::airspy_source_c (const std::string &args)
   ret = airspy_version_string_read( _dev, version, sizeof(version));
   AIRSPY_THROW_ON_ERROR(ret, "Failed to read version string")
 #if 0
-  read_partid_serialno_t serial_number;
-  ret = airspy_board_partid_serialno_read( _dev, &serial_number );
+  airspy_read_partid_serialno_t part_serial;
+  ret = airspy_board_partid_serialno_read( _dev, &part_serial );
   AIRSPY_THROW_ON_ERROR(ret, "Failed to read serial number")
 #endif
-
   uint32_t num_rates;
   airspy_get_samplerates(_dev, &num_rates, 0);
   uint32_t *samplerates = (uint32_t *) malloc(num_rates * sizeof(uint32_t));
@@ -123,7 +129,7 @@ airspy_source_c::airspy_source_c (const std::string &args)
    * to play nice with the monotonic requirement of meta-range later on */
   std::sort(_sample_rates.begin(), _sample_rates.end());
 
-  std::cerr << "Using " << version << ", " << "samplerates: ";
+  std::cerr << "Using " << version << ", samplerates: ";
 
   for (size_t i = 0; i < _sample_rates.size(); i++)
     std::cerr << boost::format("%gM ") % (_sample_rates[i].first / 1e6);
@@ -134,17 +140,33 @@ airspy_source_c::airspy_source_c (const std::string &args)
   set_sample_rate( get_sample_rates().start() );
   set_bandwidth( 0 );
 
-  set_gain( 8 ); /* preset to a reasonable default (non-GRC use case) */
+  if ( dict.count( "linearity" ) )
+    _gain_policy = linearity;
+
+  if ( dict.count( "sensitivity" ) )
+    _gain_policy = sensitivity;
+
+  set_lna_gain( 8 ); /* preset to a reasonable default (non-GRC use case) */
 
   set_mix_gain( 5 ); /* preset to a reasonable default (non-GRC use case) */
 
-  set_if_gain( 0 ); /* preset to a reasonable default (non-GRC use case) */
+  set_if_gain( 5 ); /* preset to a reasonable default (non-GRC use case) */
 
   if ( dict.count( "bias" ) )
   {
     bool bias = boost::lexical_cast<bool>( dict["bias"] );
     int ret = airspy_set_rf_bias(_dev, (uint8_t)bias);
     AIRSPY_THROW_ON_ERROR(ret, "Failed to enable DC bias")
+  }
+
+/* pack 4 sets of 12 bits into 3 sets 16 bits for the data transfer across the
+ * USB bus. The default is is unpacked, to transfer 12 bits across the USB bus
+ * in 16 bit words. libairspy transparently unpacks if packing is enabled */
+  if ( dict.count( "pack" ) )
+  {
+    bool pack = boost::lexical_cast<bool>( dict["pack"] );
+    int ret = airspy_set_packing(_dev, (uint8_t)pack);
+    AIRSPY_THROW_ON_ERROR(ret, "Failed to set USB bit packing")
   }
 
   _fifo = new boost::circular_buffer<gr_complex>(5000000);
@@ -165,11 +187,17 @@ airspy_source_c::~airspy_source_c ()
     if ( airspy_is_streaming( _dev ) == AIRSPY_TRUE )
     {
       ret = airspy_stop_rx( _dev );
-      AIRSPY_THROW_ON_ERROR(ret, "Failed to stop RX streaming")
+      if ( ret != AIRSPY_SUCCESS )
+      {
+        std::cerr << AIRSPY_FORMAT_ERROR(ret, "Failed to stop RX streaming") << std::endl;
+      }
     }
 
     ret = airspy_close( _dev );
-    AIRSPY_THROW_ON_ERROR(ret, "Failed to close AirSpy")
+    if ( ret != AIRSPY_SUCCESS )
+    {
+      std::cerr << AIRSPY_FORMAT_ERROR(ret, "Failed to close AirSpy") << std::endl;
+    }
     _dev = NULL;
   }
 
@@ -287,20 +315,6 @@ std::vector<std::string> airspy_source_c::get_devices()
 {
   std::vector<std::string> devices;
   std::string label;
-#if 0
-  for (unsigned int i = 0; i < 1 /* TODO: missing libairspy api */; i++) {
-    std::string args = "airspy=" + boost::lexical_cast< std::string >( i );
-
-    label.clear();
-
-    label = "AirSpy"; /* TODO: missing libairspy api */
-
-    boost::algorithm::trim(label);
-
-    args += ",label='" + label + "'";
-    devices.push_back( args );
-  }
-#else
 
   int ret;
   airspy_device *dev = NULL;
@@ -324,7 +338,6 @@ std::vector<std::string> airspy_source_c::get_devices()
     ret = airspy_close(dev);
   }
 
-#endif
   return devices;
 }
 
@@ -443,7 +456,7 @@ std::vector<std::string> airspy_source_c::get_gain_names( size_t chan )
 
 osmosdr::gain_range_t airspy_source_c::get_gain_range( size_t chan )
 {
-  return get_gain_range( "LNA", chan );
+  return osmosdr::gain_range_t( 0, 21, 1 );
 }
 
 osmosdr::gain_range_t airspy_source_c::get_gain_range( const std::string & name, size_t chan )
@@ -467,6 +480,17 @@ osmosdr::gain_range_t airspy_source_c::get_gain_range( const std::string & name,
 
 bool airspy_source_c::set_gain_mode( bool automatic, size_t chan )
 {
+  if ( automatic ) {
+      airspy_set_lna_agc( _dev, 1 );
+      airspy_set_mixer_agc( _dev, 1 );
+  } else {
+      airspy_set_lna_agc( _dev, 0 );
+      airspy_set_mixer_agc( _dev, 0 );
+
+      set_lna_gain( _lna_gain );
+      set_mix_gain( _mix_gain );
+  }
+
   _auto_gain = automatic;
 
   return get_gain_mode(chan);
@@ -478,6 +502,74 @@ bool airspy_source_c::get_gain_mode( size_t chan )
 }
 
 double airspy_source_c::set_gain( double gain, size_t chan )
+{
+  int ret = AIRSPY_SUCCESS;
+  osmosdr::gain_range_t gains = get_gain_range( chan );
+
+  if (_dev) {
+    double clip_gain = gains.clip( gain, true );
+    uint8_t value = clip_gain;
+
+    if ( _gain_policy == linearity ) {
+        ret = airspy_set_linearity_gain( _dev, value );
+        if ( AIRSPY_SUCCESS == ret ) {
+          _gain = clip_gain;
+        } else {
+          AIRSPY_THROW_ON_ERROR( ret, AIRSPY_FUNC_STR( "airspy_set_linearity_gain", value ) )
+        }
+    } else if ( _gain_policy == sensitivity ) {
+        ret = airspy_set_sensitivity_gain( _dev, value );
+        if ( AIRSPY_SUCCESS == ret ) {
+          _gain = clip_gain;
+        } else {
+          AIRSPY_THROW_ON_ERROR( ret, AIRSPY_FUNC_STR( "airspy_set_sensitivity_gain", value ) )
+        }
+    }
+  }
+
+  return _gain;
+}
+
+double airspy_source_c::set_gain( double gain, const std::string & name, size_t chan)
+{
+  if ( "LNA" == name ) {
+    return set_lna_gain( gain, chan );
+  }
+
+  if ( "MIX" == name ) {
+    return set_mix_gain( gain, chan );
+  }
+
+  if ( "IF" == name ) {
+    return set_if_gain( gain, chan );
+  }
+
+  return set_gain( gain, chan );
+}
+
+double airspy_source_c::get_gain( size_t chan )
+{
+  return _gain;
+}
+
+double airspy_source_c::get_gain( const std::string & name, size_t chan )
+{
+  if ( "LNA" == name ) {
+    return _lna_gain;
+  }
+
+  if ( "MIX" == name ) {
+    return _mix_gain;
+  }
+
+  if ( "IF" == name ) {
+    return _vga_gain;
+  }
+
+  return get_gain( chan );
+}
+
+double airspy_source_c::set_lna_gain( double gain, size_t chan )
 {
   int ret = AIRSPY_SUCCESS;
   osmosdr::gain_range_t gains = get_gain_range( "LNA", chan );
@@ -495,45 +587,6 @@ double airspy_source_c::set_gain( double gain, size_t chan )
   }
 
   return _lna_gain;
-}
-
-double airspy_source_c::set_gain( double gain, const std::string & name, size_t chan)
-{
-  if ( "LNA" == name ) {
-    return set_gain( gain, chan );
-  }
-
-  if ( "MIX" == name ) {
-    return set_mix_gain( gain, chan );
-  }
-
-  if ( "IF" == name ) {
-    return set_if_gain( gain, chan );
-  }
-
-  return set_gain( gain, chan );
-}
-
-double airspy_source_c::get_gain( size_t chan )
-{
-  return _lna_gain;
-}
-
-double airspy_source_c::get_gain( const std::string & name, size_t chan )
-{
-  if ( "LNA" == name ) {
-    return get_gain( chan );
-  }
-
-  if ( "MIX" == name ) {
-    return _mix_gain;
-  }
-
-  if ( "IF" == name ) {
-    return _vga_gain;
-  }
-
-  return get_gain( chan );
 }
 
 double airspy_source_c::set_mix_gain(double gain, size_t chan)
@@ -597,12 +650,58 @@ std::string airspy_source_c::get_antenna( size_t chan )
 
 double airspy_source_c::set_bandwidth( double bandwidth, size_t chan )
 {
+  if (bandwidth == 0.f)
+    return get_bandwidth( chan );
+
+  {
+    int     ret;
+    int     decim;
+    int     size;
+    const float  *kernel;
+
+    decim = (int)(_sample_rate / bandwidth);
+//    if (decim < 2)
+//    {
+//      kernel = 0;
+//      size = 0;
+//    }
+//    else
+    if (decim < 4)
+    {
+      kernel = KERNEL_2_80;
+      size = KERNEL_2_80_LEN;
+    }
+    else if (decim < 8)
+    {
+      kernel = KERNEL_4_90;
+      size = KERNEL_4_90_LEN;
+    }
+    else if (decim < 16)
+    {
+      kernel = KERNEL_8_100;
+      size = KERNEL_8_100_LEN;
+    }
+    else
+    {
+      kernel = KERNEL_16_110;
+      size = KERNEL_16_110_LEN;
+    }
+
+    if (size)
+    {
+      std::cerr << "  Airspy decim:" << decim
+                << "  kernel size:" << size << std::endl;
+      ret = airspy_set_conversion_filter_float32(_dev, kernel, size);
+      AIRSPY_THROW_ON_ERROR(ret, "Failed to set IQ conversion filter")
+    }
+  }
+
   return get_bandwidth( chan );
 }
 
 double airspy_source_c::get_bandwidth( size_t chan )
 {
-  return 10e6;
+  return _sample_rate;
 }
 
 osmosdr::freq_range_t airspy_source_c::get_bandwidth_range( size_t chan )

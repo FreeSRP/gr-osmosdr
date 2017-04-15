@@ -23,6 +23,7 @@ public:
     double get_freq_corr( size_t chan = 0 );
 protected:
     static boost::shared_ptr<FreeSRP::FreeSRP> _srp;
+    bool _ignore_overflow = false;
 };
 
 #endif
