@@ -11,9 +11,9 @@ using namespace FreeSRP;
 using namespace std;
 using namespace boost::assign;
 
-boost::shared_ptr<FreeSRP::FreeSRP> freesrp_common::_srp;
+boost::shared_ptr<::FreeSRP::FreeSRP> freesrp_common::_srp;
 
-freesrp_common::freesrp_common(const std::string &args)
+freesrp_common::freesrp_common(const string &args)
 {
     dict_t dict = params_to_dict(args);
 
@@ -21,8 +21,8 @@ freesrp_common::freesrp_common(const std::string &args)
     {
         try
         {
-	    std::string serial = "";
-	    
+	    string serial = "";
+
 	    if(dict.count("freesrp"))
 	    {
 		serial = dict["freesrp"];
@@ -49,7 +49,7 @@ freesrp_common::freesrp_common(const std::string &args)
                 }
             }
 
-            _srp.reset(new FreeSRP::FreeSRP(serial));
+            _srp.reset(new ::FreeSRP::FreeSRP(serial));
 
             if(dict.count("fpga") || !_srp->fpga_loaded())
             {
@@ -112,13 +112,13 @@ freesrp_common::freesrp_common(const std::string &args)
     }
 }
 
-std::vector<std::string> freesrp_common::get_devices()
+vector<string> freesrp_common::get_devices()
 {
-    std::vector<std::string> devices;
+    vector<string> devices;
 
     try
     {
-        FreeSRP::FreeSRP srp;
+        ::FreeSRP::FreeSRP srp;
 
         string str;
         str = "freesrp=0,label='FreeSRP'";
@@ -143,7 +143,7 @@ osmosdr::meta_range_t freesrp_common::get_sample_rates( void )
     osmosdr::meta_range_t range;
 
     // Any sample rate between 1e6 and 61.44e6 can be requested.
-    // This list of some integer values is used instead of 
+    // This list of some integer values is used instead of
     //       range += osmosdr::range_t(1e6, 61.44e6);
     // because SoapyOsmo seems to handle the range object differently.
     range += osmosdr::range_t(1e6);
@@ -153,7 +153,7 @@ osmosdr::meta_range_t freesrp_common::get_sample_rates( void )
     range += osmosdr::range_t(40e6);
     range += osmosdr::range_t(50e6);
     range += osmosdr::range_t(61.44e6);
-    
+
     return range;
 }
 
@@ -172,7 +172,7 @@ osmosdr::freq_range_t freesrp_common::get_bandwidth_range(size_t chan)
     osmosdr::meta_range_t range;
 
     //range += osmosdr::range_t(2e5, 56e6);
-    
+
     range += osmosdr::range_t(2e5);
     range += osmosdr::range_t(1e6);
     range += osmosdr::range_t(8e6);

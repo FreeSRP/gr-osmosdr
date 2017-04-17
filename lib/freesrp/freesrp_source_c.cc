@@ -3,7 +3,7 @@
 using namespace FreeSRP;
 using namespace std;
 
-freesrp_source_c_sptr make_freesrp_source_c (const std::string &args)
+freesrp_source_c_sptr make_freesrp_source_c (const string &args)
 {
     return gnuradio::get_initial_sptr(new freesrp_source_c (args));
 }
@@ -22,7 +22,7 @@ static const int MAX_IN = 0;	// maximum number of input streams
 static const int MIN_OUT = 1;	// minimum number of output streams
 static const int MAX_OUT = 1;	// maximum number of output streams
 
-freesrp_source_c::freesrp_source_c (const std::string & args) : gr::sync_block ("freesrp_source_c",
+freesrp_source_c::freesrp_source_c (const string & args) : gr::sync_block ("freesrp_source_c",
                                                                 gr::io_signature::make (MIN_IN, MAX_IN, sizeof (gr_complex)),
                                                                 gr::io_signature::make (MIN_OUT, MAX_OUT, sizeof (gr_complex))),
                                                                 freesrp_common(args)
@@ -35,8 +35,8 @@ freesrp_source_c::freesrp_source_c (const std::string & args) : gr::sync_block (
 
 bool freesrp_source_c::start()
 {
-    FreeSRP::response res = _srp->send_cmd({SET_DATAPATH_EN, 1});
-    if(res.error != FreeSRP::CMD_OK)
+    response res = _srp->send_cmd({SET_DATAPATH_EN, 1});
+    if(res.error != CMD_OK)
     {
         return false;
     }
@@ -48,18 +48,20 @@ bool freesrp_source_c::start()
 }
 
 bool freesrp_source_c::stop()
-{   
+{
     _srp->send_cmd({SET_DATAPATH_EN, 0});
     _srp->stop_rx();
+
+    _running = false;
 
     return true;
 }
 
-void freesrp_source_c::freesrp_rx_callback(const std::vector<FreeSRP::sample> &samples)
+void freesrp_source_c::freesrp_rx_callback(const vector<sample> &samples)
 {
-    std::unique_lock<std::mutex> lk(_buf_mut);
+    unique_lock<std::mutex> lk(_buf_mut);
 
-    for(const FreeSRP::sample &s : samples)
+    for(const sample &s : samples)
     {
         if(!_buf_queue.try_enqueue(s))
         {
@@ -81,22 +83,22 @@ int freesrp_source_c::work(int noutput_items, gr_vector_const_void_star& input_i
 {
     gr_complex *out = static_cast<gr_complex *>(output_items[0]);
 
-    std::unique_lock<std::mutex> lk(_buf_mut);
+    unique_lock<std::mutex> lk(_buf_mut);
 
     if(!_running)
     {
 	return WORK_DONE;
     }
-    
+
     // Wait until enough samples collected
     while(_buf_num_samples < (unsigned int) noutput_items)
     {
         _buf_cond.wait(lk);
-    }  
+    }
 
     for(int i = 0; i < noutput_items; ++i)
     {
-        FreeSRP::sample s;
+        sample s;
         if(!_buf_queue.try_dequeue(s))
         {
             // This should not be happening
@@ -119,7 +121,7 @@ double freesrp_source_c::set_sample_rate( double rate )
     response r = _srp->send_cmd(cmd);
     if(r.error != CMD_OK)
     {
-        std::cerr << "Could not set RX sample rate, error: " << r.error << endl;
+        cerr << "Could not set RX sample rate, error: " << r.error << endl;
         return 0;
     }
     else
@@ -133,7 +135,7 @@ double freesrp_source_c::get_sample_rate( void )
     response r = _srp->send_cmd({GET_RX_SAMP_FREQ, 0});
     if(r.error != CMD_OK)
     {
-        std::cerr << "Could not get RX sample rate, error: " << r.error << endl;
+        cerr << "Could not get RX sample rate, error: " << r.error << endl;
         return 0;
     }
     else
@@ -148,7 +150,7 @@ double freesrp_source_c::set_center_freq( double freq, size_t chan )
     response r = _srp->send_cmd(cmd);
     if(r.error != CMD_OK)
     {
-        std::cerr << "Could not set RX LO frequency, error: " << r.error << endl;
+        cerr << "Could not set RX LO frequency, error: " << r.error << endl;
         return 0;
     }
     else
@@ -162,7 +164,7 @@ double freesrp_source_c::get_center_freq( size_t chan )
     response r = _srp->send_cmd({GET_RX_LO_FREQ, 0});
     if(r.error != CMD_OK)
     {
-        std::cerr << "Could not get RX LO frequency, error: " << r.error << endl;
+        cerr << "Could not get RX LO frequency, error: " << r.error << endl;
         return 0;
     }
     else
@@ -171,9 +173,9 @@ double freesrp_source_c::get_center_freq( size_t chan )
     }
 }
 
-std::vector<std::string> freesrp_source_c::get_gain_names( size_t chan )
+vector<string> freesrp_source_c::get_gain_names( size_t chan )
 {
-    std::vector<std::string> names;
+    vector<string> names;
 
     names.push_back("RF");
 
@@ -191,23 +193,23 @@ osmosdr::gain_range_t freesrp_source_c::get_gain_range(size_t chan)
 
 bool freesrp_source_c::set_gain_mode( bool automatic, size_t chan )
 {
-    uint8_t gc_mode = FreeSRP::RF_GAIN_SLOWATTACK_AGC;
+    uint8_t gc_mode = RF_GAIN_SLOWATTACK_AGC;
 
     if(!automatic)
     {
-        gc_mode = FreeSRP::RF_GAIN_MGC;
+        gc_mode = RF_GAIN_MGC;
     }
 
     command cmd = _srp->make_command(SET_RX_GC_MODE, gc_mode);
     response r = _srp->send_cmd(cmd);
     if(r.error != CMD_OK)
     {
-        std::cerr << "Could not set RX RF gain control mode, error: " << r.error << endl;
+        cerr << "Could not set RX RF gain control mode, error: " << r.error << endl;
         return false;
     }
     else
     {
-        return r.param != FreeSRP::RF_GAIN_MGC;
+        return r.param != RF_GAIN_MGC;
     }
 }
 
@@ -216,16 +218,16 @@ bool freesrp_source_c::get_gain_mode( size_t chan )
     response r = _srp->send_cmd({GET_RX_GC_MODE, 0});
     if(r.error != CMD_OK)
     {
-        std::cerr << "Could not get RX RF gain control mode, error: " << r.error << endl;
+        cerr << "Could not get RX RF gain control mode, error: " << r.error << endl;
         return false;
     }
     else
     {
-        return r.param != FreeSRP::RF_GAIN_MGC;
+        return r.param != RF_GAIN_MGC;
     }
 }
 
-osmosdr::gain_range_t freesrp_source_c::get_gain_range(const std::string& name, size_t chan)
+osmosdr::gain_range_t freesrp_source_c::get_gain_range(const string& name, size_t chan)
 {
     return get_gain_range(chan);
 }
@@ -238,7 +240,7 @@ double freesrp_source_c::set_gain(double gain, size_t chan)
     response r = _srp->send_cmd(cmd);
     if(r.error != CMD_OK)
     {
-        std::cerr << "Could not set RX RF gain, error: " << r.error << endl;
+        cerr << "Could not set RX RF gain, error: " << r.error << endl;
         return 0;
     }
     else
@@ -247,7 +249,7 @@ double freesrp_source_c::set_gain(double gain, size_t chan)
     }
 }
 
-double freesrp_source_c::set_gain(double gain, const std::string& name, size_t chan)
+double freesrp_source_c::set_gain(double gain, const string& name, size_t chan)
 {
     if(name == "RF")
     {
@@ -264,7 +266,7 @@ double freesrp_source_c::get_gain(size_t chan)
     response r = _srp->send_cmd({GET_RX_RF_GAIN, 0});
     if(r.error != CMD_OK)
     {
-        std::cerr << "Could not get RX RF gain, error: " << r.error << endl;
+        cerr << "Could not get RX RF gain, error: " << r.error << endl;
         return 0;
     }
     else
@@ -273,7 +275,7 @@ double freesrp_source_c::get_gain(size_t chan)
     }
 }
 
-double freesrp_source_c::get_gain(const std::string& name, size_t chan)
+double freesrp_source_c::get_gain(const string& name, size_t chan)
 {
     if(name == "RF")
     {
@@ -290,21 +292,21 @@ double freesrp_source_c::set_bb_gain(double gain, size_t chan)
     return set_gain(gain, chan);
 }
 
-std::vector<std::string> freesrp_source_c::get_antennas(size_t chan)
+vector<string> freesrp_source_c::get_antennas(size_t chan)
 {
-    std::vector<std::string> antennas;
+    vector<string> antennas;
 
     antennas.push_back(get_antenna(chan));
 
     return antennas;
 }
 
-std::string freesrp_source_c::set_antenna(const std::string& antenna, size_t chan)
+string freesrp_source_c::set_antenna(const string& antenna, size_t chan)
 {
     return get_antenna(chan);
 }
 
-std::string freesrp_source_c::get_antenna(size_t chan)
+string freesrp_source_c::get_antenna(size_t chan)
 {
     return "RX";
 }
@@ -315,7 +317,7 @@ double freesrp_source_c::set_bandwidth(double bandwidth, size_t chan)
     response r = _srp->send_cmd(cmd);
     if(r.error != CMD_OK)
     {
-        std::cerr << "Could not set RX RF bandwidth, error: " << r.error << endl;
+        cerr << "Could not set RX RF bandwidth, error: " << r.error << endl;
         return 0;
     }
     else
@@ -329,7 +331,7 @@ double freesrp_source_c::get_bandwidth(size_t chan)
     response r = _srp->send_cmd({GET_RX_RF_BANDWIDTH, 0});
     if(r.error != CMD_OK)
     {
-        std::cerr << "Could not get RX RF bandwidth, error: " << r.error << endl;
+        cerr << "Could not get RX RF bandwidth, error: " << r.error << endl;
         return 0;
     }
     else

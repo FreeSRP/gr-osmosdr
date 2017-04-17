@@ -117,14 +117,14 @@ public:
 
 private:
 
-    void freesrp_tx_callback(std::vector<FreeSRP::sample> &samples);
+    void freesrp_tx_callback(std::vector<::FreeSRP::sample> &samples);
 
     bool _running = false;
 
     std::mutex _buf_mut{};
     std::condition_variable _buf_cond{};
     size_t _buf_available_space = FREESRP_RX_TX_QUEUE_SIZE;
-    moodycamel::ReaderWriterQueue<FreeSRP::sample> _buf_queue{FREESRP_RX_TX_QUEUE_SIZE};
+    moodycamel::ReaderWriterQueue<::FreeSRP::sample> _buf_queue{FREESRP_RX_TX_QUEUE_SIZE};
 };
 
 #endif /* INCLUDED_FREESRP_SINK_C_H */
