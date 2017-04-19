@@ -1,3 +1,6 @@
+## The FreeSRP is now supported in the [official gr-osmosdr master](https://git.osmocom.org/gr-osmosdr)
+
+
 While primarily being developed for the OsmoSDR hardware, this block
 as well supports:
 
